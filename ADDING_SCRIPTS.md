@@ -1,5 +1,7 @@
 # Adding scripts
 
+Start with [SCRIPT_CHECKLIST.md](SCRIPT_CHECKLIST.md) and the descriptions in each chapter folder. Tick the relevant items and record the uploaded paths; one master script may cover several items.
+
 Place each script in the relevant chapter folder. Put reusable functions in `shared/` and small example inputs in `examples/`. Keep the original filenames where that helps preserve function calls and dependencies.
 
 Add a short README in each chapter folder explaining:

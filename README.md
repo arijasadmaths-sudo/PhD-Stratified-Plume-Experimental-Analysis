@@ -6,6 +6,10 @@ This repository is intended to provide general implementations of the processing
 
 The repository currently contains the folder structure and instructions for adding scripts. Analysis code, example inputs and results have not yet been added.
 
+## Adding your scripts
+
+Start with the [script coverage checklist](SCRIPT_CHECKLIST.md). It lists the workflows to include and links to descriptions of their purpose, inputs, outputs and adjustable settings. Tick each item and add the actual filename as you upload code. One script can cover several items.
+
 ## Repository structure
 
 | Folder | Intended contents |
