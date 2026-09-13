@@ -1,0 +1,29 @@
+# Editor and operating-system files
+.DS_Store
+Thumbs.db
+*~
+*.swp
+.vscode/
+.idea/
+
+# MATLAB temporary and autosave files
+*.asv
+*.m~
+slprj/
+
+# Python caches and local environments
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.ipynb_checkpoints/
+
+# Local credentials
+.env
+.env.*
+!.env.example
+
+# Keep large working data and generated results local
+/data-local/
+/outputs/
+/results-local/
