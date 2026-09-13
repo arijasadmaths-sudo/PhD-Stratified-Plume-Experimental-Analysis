@@ -1,77 +1,27 @@
-# Script coverage checklist
+# Script coverage
 
-Use this page to track the general workflows accompanying *Mixing behaviour of plumes*. These entries are based on the methods in the current thesis, not a requirement to recover an exact script for every experimental record.
+This records the code supplied with the thesis. A shared routine can support several configurations. Inclusion records the available implementation; it does not claim that every historical setting or figure has been archived.
 
-One master script may cover several entries. Reuse its filename wherever appropriate; helper functions, notebooks, worksheets and documented external repositories can also provide coverage. Suggested filenames below are labels to help locate the code, not claims that those files exist. Keep your own filenames.
+The six supplied MATLAB files have been generalised and added to the repository. Their entry points and supporting functions are listed in the [README](README.md). The method-level changes are recorded in [CODE_NOTES.md](CODE_NOTES.md).
 
-Tick an entry when its code and short description are included, and replace the dash with the actual path or external link. For an item handled inside another script, write that script's path. If an ancillary item was not used or is not being supplied, record that briefly instead of creating new code. An unticked entry means upload coverage has not yet been recorded; it does not mean the analysis was never performed.
+| Workflow | Included implementation and scope |
+| --- | --- |
+| P1 — Optical and spatial calibration | The PLIF code accepts optical geometry, source coordinates and a known calibration field, and estimates attenuation and incident intensity. A complete spatial-distortion calibration workflow is not supplied. |
+| P2 — PLIF reconstruction | `chapter-02-plif/test_forward_ray_A.m` and the shared reconstruction functions |
+| P3 — Forward consistency | `chapter-02-plif/validate_plif_reconstruction.m`; measured/forward residuals using common incident intensities |
+| P4 — Vertical profiles and heights | `shared/densityheight.m` provides image-column averaging and profile normalisation. The supplied copy has no calibrated-density conversion or fixed-threshold layer-height method. Its historical profile-value calculation is labelled separately. |
+| R1 — Height histories | The shared routine retains power fitting and model comparison for explicitly selected signals. Chapter-specific height-growth models are not supplied. |
+| R2 — Quiescent rectangular profiles | `shared/densityheight.m` supplies the common processing and profile plots. The theoretical comparison profiles are not part of this copy. |
+| R3 — Image-feature lengths | `chapter-03-rectangular-quiescent/auto_vorticity_length.m`; automatic edge selection and manual review |
+| R4 — Length fits | The same entry point retains exponential and power fits and a prescribed power curve. It does not calculate all chapter-specific intersection or characteristic-time quantities. |
+| X1–X3 — Rectangular-crossflow translation, profile model and checks | Not supplied in these six files; the shared profile routine can provide the initial image processing |
+| C1 — Circular geometry and height model | Not supplied in these six files |
+| C2 — Quiescent circular profiles | The shared profile routine was adapted for this configuration; no separate theoretical-profile implementation is supplied |
+| C3–C4 — Circular-crossflow fitting and evolution checks | Not supplied in these six files |
+| N1–N4 — Numerical solvers and post-processing | Not supplied in this upload; the numerical chapter folder is retained for these files |
+| S1 — Shared processing and export | `shared/densityheight.m`, `shared/image_saver.m` and the helpers beside each entry point |
+| S2 — Source-parameter calculations | General source-parameter worksheets are not supplied in these six files |
+| Refractive-index matching | `shared/Propanolweight.m`; paired interpolation with user-supplied calibration tables |
+| Input examples | Configuration templates and input descriptions are supplied; experimental images and run-specific settings are not included |
 
-To update the checklist on GitHub, edit this file, change `- [ ]` to `- [x]` for an included item, add its filename, and commit the change.
-
-**Upload status:** no analysis scripts have yet been added to this scaffold. Checking an item records inclusion, not a claim that it has been runtime-tested.
-
-## Chapter 2 — PLIF and experimental processing
-
-[Descriptions, inputs and outputs](chapter-02-plif/README.md)
-
-- [ ] **P1 — Optical and spatial calibration.** Code/location: —
-- [ ] **P2 — PLIF reconstruction.** Code/location: —
-- [ ] **P3 — Forward reconstruction-consistency check.** Code/location: —
-- [ ] **P4 — Vertical profiles and stratification heights.** Code/location: —
-
-## Chapter 3 — Rectangular enclosure without crossflow
-
-[Descriptions, inputs and outputs](chapter-03-rectangular-quiescent/README.md)
-
-- [ ] **R1 — Height-history analysis.** Code/location: —
-- [ ] **R2 — Normalised density-profile comparison.** Code/location: —
-- [ ] **R3 — Apparent dye-feature length extraction.** Code/location: —
-- [ ] **R4 — Early- and late-time length fits.** Code/location: —
-
-## Chapter 4 — Rectangular crossflow
-
-[Descriptions, inputs and outputs](chapter-04-rectangular-crossflow/README.md)
-
-- [ ] **X1 — Density translation and amplitude analysis.** Code/location: —
-- [ ] **X2 — Translating-profile model and parameter reporting.** Code/location: —
-- [ ] **X3 — Approximation checks and summary exports.** Code/location: —
-
-## Chapter 5 — Circular enclosure
-
-[Descriptions, inputs and outputs](chapter-05-circular-enclosure/README.md)
-
-- [ ] **C1 — Circular geometry and stratification-height comparison.** Code/location: —
-- [ ] **C2 — Quiescent circular density profiles.** Code/location: —
-- [ ] **C3 — Circular-crossflow mean-profile fit.** Code/location: —
-- [ ] **C4 — Circular-crossflow density-evolution checks.** Code/location: —
-
-## Chapter 6 — Numerical models
-
-[Descriptions, inputs and outputs](chapter-06-numerical-models/README.md)
-
-- [ ] **N1 — Two-dimensional Cartesian model.** Code/location: —
-- [ ] **N2 — Axisymmetric model.** Code/location: —
-- [ ] **N3 — Three-dimensional model.** Code/location: —
-- [ ] **N4 — Numerical post-processing and existing verification.** Code/location: —
-
-## Shared code
-
-[Descriptions, inputs and outputs](shared/README.md)
-
-- [ ] **S1 — Shared processing, plotting and export helpers.** Code/location: —
-- [ ] **S2 — Source and experimental parameter calculations.** Code/location: —
-
-## Example inputs and a short run-through
-
-[Descriptions, inputs and outputs](examples/README.md)
-
-- [ ] **E1 — Small worked example.** Code/location: —
-
-## Other supporting code, if used or available
-
-- [ ] **Acquisition/controller software:** camera streaming, storage requests and control programs; include a maintained repository link if supplied elsewhere. Location or decision: —
-- [ ] **Additional calibration utilities:** separate spatial-distortion or refractive-index interpolation scripts, if not already covered by P1. Location or decision: —
-- [ ] **Intake-design/appendix utilities:** conformal-map, Laplace/streamfunction or CAD-generation code, if used for the documented design exploration. Location or decision: —
-- [ ] **Solver support files:** separate mesh builders, boundary markers, environment instructions and scheduler launch files needed by N1–N3. Location or decision: —
-
-These ancillary entries are reminders of existing supporting material, not requests for new research or new software.
+The separate [PLIF repository](https://github.com/arijasadmaths-sudo/PLIF) is also available. `image_saver.m` in this repository selects files that already exist; it does not acquire camera frames.

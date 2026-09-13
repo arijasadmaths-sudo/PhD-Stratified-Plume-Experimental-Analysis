@@ -1,25 +1,9 @@
-# Example inputs and a short run-through
+# Inputs and configuration
 
-[Back to the coverage checklist](../SCRIPT_CHECKLIST.md)
+The configuration functions beside each entry point list the settings required for a run. They contain empty fields for measured quantities rather than values from a particular experiment.
 
-Example data are optional. If no example can be included, document the input layout and record that choice in the checklist.
+Keep images in a separate input folder and write generated files to a separate output folder. Supply the calibration image by name. Check the selected file order before assigning timestamps: alphabetical ordering and numerical filename ordering can differ.
 
-## Workflows to include
+For the shared profile routine, provide the image sequence, selected columns, reference frame and time coordinates. For PLIF reconstruction, provide the optical calibration and the intensity scale as well. For image-edge measurements, provide the crop, averaging band, detector settings and time/length normalisations.
 
-These are workflow groups, not a required number of separate files. Suggested names can be replaced by your actual filenames.
-
-## E1 — Small worked example
-
-**Suggested or known candidate name:** `example_config.m, .json or README`.
-
-Show how to set paths and parameters and invoke a representative analysis. If data are stored elsewhere, explain their expected structure instead.
-
-| Item | Description |
-| --- | --- |
-| Inputs | One small representative input or clearly labelled synthetic input, where available. |
-| Outputs | A short command sequence and a description of the expected output. |
-| Settings to explain | Mark example settings and synthetic inputs clearly. A small example is useful; a full archive of experimental images is outside this repository scope. |
-
-## When adding the code
-
-Replace the candidate filename with the actual entry point, give a run command and list the required software/helpers. State the version or test status only when known. Record coverage in [SCRIPT_CHECKLIST.md](../SCRIPT_CHECKLIST.md); the same script can cover more than one entry.
+Experimental images are not included. See the [shared code instructions](../shared/README.md), [PLIF instructions](../chapter-02-plif/README.md) and [image-edge instructions](../chapter-03-rectangular-quiescent/README.md) for the entry points and outputs.

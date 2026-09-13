@@ -2,13 +2,28 @@
 
 Supporting code for Arij Asad's PhD thesis, *Mixing behaviour of plumes*, University of Bristol.
 
-This repository is intended to provide general implementations of the processing and analysis methods described in the thesis. Inputs and selection settings can be adjusted for individual experimental records. It is not a complete archive of the historical code and settings used to produce every figure.
+This repository contains general versions of the MATLAB code used for the experimental processing and analysis. The input files, calibration, measurement window and time coordinates are supplied for each configuration.
 
-The repository currently contains the folder structure and instructions for adding scripts. Analysis code, example inputs and results have not yet been added.
+`densityheight` was used in most situations, with small changes for each configuration. Its common processing is kept in `shared/`, so it does not need a separate copy for every chapter. The supplied version produces normalised image profiles; the input scale determines their physical interpretation.
+
+These files document the methods and their required settings. They are not an archive of every historical script, experimental record or figure configuration. Experimental images and fitted values are not included.
+
+## Included code
+
+| Entry point | Purpose |
+| --- | --- |
+| [densityheight.m](shared/densityheight.m) | Average image columns, subtract a reference profile, normalise profiles and compare selected signals with fitted curves |
+| [image_saver.m](shared/image_saver.m) | Select existing TIFF files and copy or move them to another folder |
+| [Propanolweight.m](shared/Propanolweight.m) | Calculate a propanol addition from supplied refractive-index calibration tables |
+| [test_forward_ray_A.m](chapter-02-plif/test_forward_ray_A.m) | Reconstruct a scalar field from fluorescence images and calibration data |
+| [validate_plif_reconstruction.m](chapter-02-plif/validate_plif_reconstruction.m) | Compare measured fluorescence with a forward image using the incident intensities used in reconstruction |
+| [auto_vorticity_length.m](chapter-03-rectangular-quiescent/auto_vorticity_length.m) | Measure image-edge separation, review detections and compare length histories with exponential and power curves |
+
+The two PLIF entry points share the reconstruction routines. The name `auto_vorticity_length` is retained for continuity; it measures lengths in scalar images, not a vorticity field.
 
 ## Adding your scripts
 
-Start with the [script coverage checklist](SCRIPT_CHECKLIST.md). It lists the workflows to include and links to descriptions of their purpose, inputs, outputs and adjustable settings. Tick each item and add the actual filename as you upload code. One script can cover several items.
+The [script coverage checklist](SCRIPT_CHECKLIST.md) records which parts of the wider thesis workflow are supplied. One entry point can serve several configurations. Numerical solvers and further analysis files can be added to the existing chapter folders when available.
 
 ## Repository structure
 
@@ -24,9 +39,11 @@ Start with the [script coverage checklist](SCRIPT_CHECKLIST.md). It lists the wo
 
 ## Using the code
 
-Once scripts have been added, start with the instructions in the relevant chapter folder. Each analysis should state its entry point, required input files and software requirements. Experimental data are not included unless explicitly identified in that folder.
+Start with the instructions in [shared/](shared/README.md), [Chapter 2](chapter-02-plif/README.md) or [Chapter 3](chapter-03-rectangular-quiescent/README.md). Add the relevant folders to the MATLAB path, fill in the required configuration inputs, then call the entry point. Empty required settings are deliberate: the code does not assume a particular experiment.
 
-Dataset-specific settings, such as crop bounds, spatial calibration, retained-frame spacing and smoothing width, should be checked before running an analysis. Example settings illustrate how to use the code; they should not be assumed to be the settings used for a particular thesis figure.
+Use the timestamps and spatial calibration belonging to the selected images. Retained-image spacing is separate from camera frame rate. A normalised image profile alone does not establish dimensional density or a threshold-defined layer height.
+
+MATLAB is required, with the Image Processing Toolbox for the image workflows. The interactive review tools need a graphical MATLAB session. The cleaned code has undergone static syntax and source review; MATLAB execution and data-based validation have not been performed in this environment. See [CODE_NOTES.md](CODE_NOTES.md) for the changes and limits of this check.
 
 See [ADDING_SCRIPTS.md](ADDING_SCRIPTS.md) for the short guide to adding code.
 

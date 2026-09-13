@@ -1,61 +1,56 @@
-# Chapter 2 — PLIF and experimental processing
+# PLIF reconstruction
 
-[Back to the coverage checklist](../SCRIPT_CHECKLIST.md)
+These functions reconstruct a dimensionless field from fluorescence images, then calculate the fluorescence that the reconstructed field would produce. The inverse and forward methods come from the supplied `test_forward_ray_A` and `validate_plif_reconstruction_checkpoint_v3` scripts. Their shared calculations are in `plif_reconstruct.m`.
 
-If P1–P4 are combined in one program, list that same filename against each covered item. The profile routine must retain the narrow-window exception for circular crossflow when it is used. Where an intensity-derived pipeline is used, identify its outputs accordingly rather than calling them calibrated density.
+The model uses one light source, refraction through the wall and straight light tubes in the fluid. Image rows follow the direction of propagation. The reconstructed field is bounded between 0 and 1; converting this field to density requires the density calibration for the data set.
 
-## Workflows to include
+## Setup
 
-These are workflow groups, not a required number of separate files. Suggested names can be replaced by your actual filenames.
+Use MATLAB with Image Processing Toolbox. The drivers also use `tiledlayout` and `exportgraphics`; use a MATLAB release that provides both. Add this folder to the MATLAB path. The `auxiliary` folder is only needed when calling one of its functions directly.
 
-## P1 — Optical and spatial calibration
+```matlab
+addpath('chapter-02-plif'); % From the repository root.
+cfg = plif_settings();
+% Fill in cfg with the settings for the images being processed.
+outputs = test_forward_ray_A(cfg);
+summary = validate_plif_reconstruction(cfg);
+```
 
-**Suggested or known candidate name:** `plif_calibration.m`.
+`plif_settings` deliberately leaves measured quantities unset. Set them before running either driver. Keep a copy of the completed configuration with the data.
 
-Establish the image-to-physical mapping, ray paths and calibration response used by the reconstruction. Include any helper that fits attenuation or evaluates incident ray intensity.
-
-| Item | Description |
+| Setting | Meaning |
 | --- | --- |
-| Inputs | Calibration images, known grid geometry and optical/attenuation inputs. |
-| Outputs | Calibration maps, coefficients and incident ray intensities. |
-| Settings to explain | Exposure ratio, coordinate orientation, optical geometry and calibration units. |
+| `inputFolder`, `outputFolder` | Input images and saved results. |
+| `calibrationFile` | Calibration image filename, relative to `inputFolder`. |
+| `imageFiles` | Image filenames in processing order, excluding the calibration image. |
+| `cropRect` | `[x y width height]`, using one-based pixel indices and width/height as pixel counts; `[]` uses the full image. Applied to both calibration and measurement images. |
+| `resizeScale` | Common image resizing factor. The cropped images must have equal dimensions. |
+| `intensityDivisor` | Raw image value that represents intensity 1. RGB images use the mean of the three channels. |
+| `calibrationScaleFactor` | Multiplier bringing the calibration image onto the measurement exposure scale. |
+| `geometry.sourceCoordinates` | `[horizontal vertical]` source position in cropped, unresized image coordinates. A source above the crop has a negative vertical coordinate. |
+| `geometry.refractiveIndices` | `[air wall fluid]`. |
+| `geometry.wallThickness`, `geometry.unseenFluidDepth` | Distances in the same pixel units as the unresized source coordinates. |
+| `geometry.fanHalfAngleDegrees` | Fan half-angle in air, in degrees. |
+| `calibrationField` | Known dimensionless field on the resized grid, with values in `[0,1]`. Supply an array or a function handle accepting `[rows cols]`. |
+| `kappa0` | Background attenuation per resized image row. |
+| `kappa1` | Field-dependent attenuation coefficient. Set `[]` to fit it from the calibration image, or supply a positive scalar. |
+| `attenuationFitRows` | Inclusive `[first last]` rows used when fitting `kappa1`. These refer to the resized image. The original fit uses row index divided by the light-tube path length across one row. |
+| `forwardIncidentIntensity` | For the forward driver, use `'calibration'`, a nonnegative scalar, or one intensity per reconstructed image column. |
+| `signalThresholdFraction` | Fraction of the measured intensity range used to select the signal region in validation. |
+| `figureResolution`, `overwrite` | Diagnostic figure resolution in dpi and permission to replace existing output files. |
 
-## P2 — PLIF reconstruction
+Changing the image size, crop or optical system requires checking the geometry and attenuation settings. Lens correction is not applied automatically. If needed, apply independently calibrated maps to both image sets before reconstruction; see `auxiliary/plif_apply_lens_maps.m`.
 
-**Suggested or known candidate name:** `plif_reconstruct.m`.
+## Outputs
 
-Convert calibration intensities to floating point, apply the half-exposure correction before the common scaling, and perform the attenuation/inverse reconstruction. State how imported colour planes are handled.
+`test_forward_ray_A` saves the reconstructed field as a standalone greyscale PNG in `outputFolder/reconstructed_fields`. This folder can be supplied to `densityheight` for image-profile processing. The PNG quantises the field; the MAT file retains its full numerical precision. Do not feed the diagnostic panel images to `densityheight`. The returned cell array has one row per image, with paths to the MAT file, comparison PNG and standalone field PNG in that order.
 
-| Item | Description |
-| --- | --- |
-| Inputs | Experimental TIFFs and the calibration outputs from P1. |
-| Outputs | Reconstructed source-fluid-fraction proxy chi and dimensional density rho, with any convergence flags the implementation provides. |
-| Settings to explain | Operation order, reference densities, solver settings and common camera scale. |
+The output folder also contains a MAT file and a four-panel diagnostic PNG for each image. The MAT file includes the reconstructed field, measured and synthetic fluorescence, incident-intensity estimates, attenuation coefficients, configuration and source filename.
 
-## P3 — Forward reconstruction-consistency check
+`validate_plif_reconstruction` always uses the calibration-derived incident intensities for both reconstruction and forward projection. It saves a MAT file and a three-panel comparison for each completed image, plus `PLIF_validation_summary.csv`. The summary reports RMSE, mean and maximum absolute residual, correlation, and errors within the signal region. NRMSE is reported as a percentage of the measured intensity range, separately for the full image and signal region.
 
-**Suggested or known candidate name:** `plif_forward_check.m`.
+This comparison measures consistency between reconstruction and forward projection using the same optical model. It does not provide an independent validation of absolute density.
 
-Forward-predict fluorescence and compare it with the measurement over the same retained region. This covers the four-frame check and processed-versus-measured comparison figure.
+## Retained auxiliary calculations
 
-| Item | Description |
-| --- | --- |
-| Inputs | Measured fluorescence, reconstructed chi and the same optical calibration used for inversion. |
-| Outputs | Synthetic fluorescence, residual maps, comparison panels and residual/RMSE/NRMSE summaries. |
-| Settings to explain | Exposure-corrected inputs, bottom-200-row exclusion and residual normalisation; this is an internal consistency check. |
-
-## P4 — Vertical profiles and stratification heights
-
-**Suggested or known candidate name:** `extract_profiles_and_height.m`.
-
-Average over the appropriate columns, smooth as required, retain dimensional profiles and extrema, calculate phi_m, and detect h_epsilon(t). A common implementation can serve Chapters 3–5.
-
-| Item | Description |
-| --- | --- |
-| Inputs | Ordered reconstructed fields, timestamps and a selected measurement window. |
-| Outputs | Vertical coordinates, dimensional profiles, normalised profiles, density extrema and dimensional height histories. |
-| Settings to explain | Pixel scale, crop/window, time origin, actual retained spacing, smoothing order/width and fixed per-record epsilon. For the supplied thesis comparisons, Run 1 is displayed. |
-
-## When adding the code
-
-Replace the candidate filename with the actual entry point, give a run command and list the required software/helpers. State the version or test status only when known. Record coverage in [SCRIPT_CHECKLIST.md](../SCRIPT_CHECKLIST.md); the same script can cover more than one entry.
+The supplied scripts also contained alternative forward calculations and optical helpers that were not called by their main reconstruction path. Their reusable parts are kept in `auxiliary`; its README records the original names and the removed configuration-specific parts.
