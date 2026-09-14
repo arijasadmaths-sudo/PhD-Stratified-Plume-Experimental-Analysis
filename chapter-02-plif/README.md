@@ -6,7 +6,7 @@ The model uses one light source, refraction through the wall and straight light 
 
 ## Setup
 
-Use MATLAB with Image Processing Toolbox. The drivers also use `tiledlayout` and `exportgraphics`; use a MATLAB release that provides both. Add this folder to the MATLAB path. The `auxiliary` folder is only needed when calling one of its functions directly.
+Use MATLAB with Image Processing Toolbox. The drivers also use `tiledlayout` and `exportgraphics`; use a MATLAB release that provides both. Add this folder to the MATLAB path. All required supporting functions are kept in this folder.
 
 ```matlab
 addpath('chapter-02-plif'); % From the repository root.
@@ -39,7 +39,7 @@ summary = validate_plif_reconstruction(cfg);
 | `signalThresholdFraction` | Fraction of the measured intensity range used to select the signal region in validation. |
 | `figureResolution`, `overwrite` | Diagnostic figure resolution in dpi and permission to replace existing output files. |
 
-Changing the image size, crop or optical system requires checking the geometry and attenuation settings. Lens correction is not applied automatically. If needed, apply independently calibrated maps to both image sets before reconstruction; see `auxiliary/plif_apply_lens_maps.m`.
+Changing the image size, crop or optical system requires checking the geometry and attenuation settings. Lens correction is not included; where required, apply an independently calibrated correction to both image sets before reconstruction.
 
 ## Outputs
 
@@ -50,7 +50,3 @@ The output folder also contains a MAT file and a four-panel diagnostic PNG for e
 `validate_plif_reconstruction` always uses the calibration-derived incident intensities for both reconstruction and forward projection. It saves a MAT file and a three-panel comparison for each completed image, plus `PLIF_validation_summary.csv`. The summary reports RMSE, mean and maximum absolute residual, correlation, and errors within the signal region. NRMSE is reported as a percentage of the measured intensity range, separately for the full image and signal region.
 
 This comparison measures consistency between reconstruction and forward projection using the same optical model. It does not provide an independent validation of absolute density.
-
-## Retained auxiliary calculations
-
-The supplied scripts also contained alternative forward calculations and optical helpers that were not called by their main reconstruction path. Their reusable parts are kept in `auxiliary`; its README records the original names and the removed configuration-specific parts.

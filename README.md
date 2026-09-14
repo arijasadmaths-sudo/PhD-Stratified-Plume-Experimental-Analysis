@@ -1,49 +1,38 @@
 # Mixing behaviour of plumes — supporting code
 
-Supporting code for Arij Asad's PhD thesis, *Mixing behaviour of plumes*, University of Bristol.
+Supporting MATLAB code for Arij Asad's PhD thesis, *Mixing behaviour of plumes*, University of Bristol.
 
-This repository contains general versions of the MATLAB code used for the experimental processing and analysis. The input files, calibration, measurement window and time coordinates are supplied for each configuration.
+This repository contains cleaned, general versions of the six supplied experimental-processing and analysis workflows. Local paths, experiment-specific image selections, crop dimensions, calibration values, frame intervals and fitted constants have been removed. The required settings are supplied by the user for each data set.
 
-`densityheight` was used in most situations, with small changes for each configuration. Its common processing is kept in `shared/`, so it does not need a separate copy for every chapter. The supplied version produces normalised image profiles; the input scale determines their physical interpretation.
+Experimental images, calibration data and fitted results are not included.
 
-These files document the methods and their required settings. They are not an archive of every historical script, experimental record or figure configuration. Experimental images and fitted values are not included.
+## Main files
 
-## Included code
-
-| Entry point | Purpose |
+| File | Purpose |
 | --- | --- |
 | [densityheight.m](shared/densityheight.m) | Average image columns, subtract a reference profile, normalise profiles and compare selected signals with fitted curves |
 | [image_saver.m](shared/image_saver.m) | Select existing TIFF files and copy or move them to another folder |
 | [Propanolweight.m](shared/Propanolweight.m) | Calculate a propanol addition from supplied refractive-index calibration tables |
 | [test_forward_ray_A.m](chapter-02-plif/test_forward_ray_A.m) | Reconstruct a scalar field from fluorescence images and calibration data |
-| [validate_plif_reconstruction.m](chapter-02-plif/validate_plif_reconstruction.m) | Compare measured fluorescence with a forward image using the incident intensities used in reconstruction |
-| [auto_vorticity_length.m](chapter-03-rectangular-quiescent/auto_vorticity_length.m) | Measure image-edge separation, review detections and compare length histories with exponential and power curves |
+| [validate_plif_reconstruction.m](chapter-02-plif/validate_plif_reconstruction.m) | Compare measured fluorescence with its forward reconstruction |
+| [auto_vorticity_length.m](chapter-03-rectangular-quiescent/auto_vorticity_length.m) | Measure image-edge separation, review detections and compare length histories with fitted curves |
 
-The two PLIF entry points share the reconstruction routines. The name `auto_vorticity_length` is retained for continuity; it measures lengths in scalar images, not a vorticity field.
+The PLIF scripts use four supporting files in the same folder: `plif_settings.m`, `plif_prepare.m`, `plif_read_image.m` and `plif_reconstruct.m`. The image-edge script uses `auto_vorticity_length_config.m` as its configuration template.
 
-## Adding your scripts
-
-The [script coverage checklist](SCRIPT_CHECKLIST.md) records which parts of the wider thesis workflow are supplied. One entry point can serve several configurations. Numerical solvers and further analysis files can be added to the existing chapter folders when available.
+`densityheight.m` was used in most experimental configurations with small changes to the inputs. The common processing is kept as one configurable function in `shared/`.
 
 ## Repository structure
 
-| Folder | Intended contents |
+| Folder | Contents |
 | --- | --- |
-| `chapter-02-plif/` | PLIF calibration, reconstruction and image processing |
-| `chapter-03-rectangular-quiescent/` | Layer heights, density profiles and dye-feature analysis in the quiescent rectangular enclosure |
-| `chapter-04-rectangular-crossflow/` | Density profiles and reduced-model analysis for rectangular crossflow |
-| `chapter-05-circular-enclosure/` | Layer heights, density profiles and crossflow analysis in the circular enclosure |
-| `chapter-06-numerical-models/` | Numerical models and their post-processing |
-| `shared/` | Functions used by more than one analysis |
-| `examples/` | Small example inputs and demonstrations, where available |
+| [chapter-02-plif](chapter-02-plif) | PLIF reconstruction, forward comparison and the required shared routines |
+| [chapter-03-rectangular-quiescent](chapter-03-rectangular-quiescent) | Image-edge measurements and fitted length histories |
+| [shared](shared) | Image profiles, TIFF selection and refractive-index matching |
 
 ## Using the code
 
-Start with the instructions in [shared/](shared/README.md), [Chapter 2](chapter-02-plif/README.md) or [Chapter 3](chapter-03-rectangular-quiescent/README.md). Add the relevant folders to the MATLAB path, fill in the required configuration inputs, then call the entry point. Empty required settings are deliberate: the code does not assume a particular experiment.
+Start with the README in the relevant folder. Add that folder to the MATLAB path, complete the required configuration and call the entry point.
 
-Use the timestamps and spatial calibration belonging to the selected images. Retained-image spacing is separate from camera frame rate. A normalised image profile alone does not establish dimensional density or a threshold-defined layer height.
+MATLAB is required. The image workflows use Image Processing Toolbox, and the interactive review tools require a graphical MATLAB session.
 
-MATLAB is required, with the Image Processing Toolbox for the image workflows. The interactive review tools need a graphical MATLAB session. The cleaned code has undergone static syntax and source review; MATLAB execution and data-based validation have not been performed in this environment. See [CODE_NOTES.md](CODE_NOTES.md) for the changes and limits of this check.
-
-See [ADDING_SCRIPTS.md](ADDING_SCRIPTS.md) for the short guide to adding code.
-
+The code has undergone static syntax and source review. It has not been run against the original data in this repository, because those data are not included. The files support the methods used in the thesis; they are not an archive of every historical script or run-specific setting.
