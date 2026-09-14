@@ -34,21 +34,27 @@ The minimum is taken over the full retained sequence. Changing the retained imag
 
 ## Optional diagnostics and fits
 
-The supplied script found the largest difference between neighbouring profile values and selected one of the two values beside it. It then sorted those values across the image sequence and plotted `1 - sortedValues` as a height. These are profile values, not row positions, and sorting them removes their association with individual frames. That calculation is retained only as an optional, dimensionless diagnostic:
+The supplied script found the largest difference between neighbouring profile values and selected one of the two values beside it. It then sorted those values across the image sequence and plotted `1 - sortedValues` as a height. These are profile values, not row positions, and sorting them removes their association with individual frames. The sorting has now been removed: `1 - profileValues` retains the original frame/time pairing. It remains an optional, dimensionless diagnostic, not a layer height:
 
 ```matlab
 config.legacyDiagnostic = true;
-config.fitTarget = 'legacy_sorted_signal';
+config.fitTarget = 'legacy_profile_signal';
 config.compareModels = true;
 ```
 
-Set `gradientDiagnostic = true` to inspect the coordinate of the selected row, keeping the same choice between neighbouring rows and retaining frame order. Selection uses the largest adjacent profile difference without dividing by row spacing; it is not a spatial derivative on a nonuniform grid. A flat profile has no gradient position and is recorded as `NaN`; such samples are excluded from fits. This spatial diagnostic is separate from the old sorted signal. It is not a reconstruction of a threshold-based layer-height method, and it does not establish that the largest gradient identifies the layer boundary. Set `fitTarget = 'gradient_position'` explicitly to fit this coordinate.
+`legacy_sorted_signal` is no longer accepted as a fit target: the function stops with an explanatory error so an old configuration cannot silently change meaning. The result is now `results.legacy.timeOrderedSignal`, and the CSV field is `LegacyTimeOrderedSignal`. Previously exported sorted histories and fits are not repaired by this code change; regenerate them from the original ordered inputs.
+
+Neither option implements the Chapter 2 bottom-up dimensional density-difference detector with its ambient-return rejection. That historical production implementation and its run-specific settings still need to be archived. Do not pass the thesis's kg m^-3 tolerances to this intensity-normalisation workflow.
+
+Set `gradientDiagnostic = true` to inspect the coordinate of the selected row, keeping the same choice between neighbouring rows and retaining frame order. Selection uses the largest adjacent profile difference without dividing by row spacing; it is not a spatial derivative on a nonuniform grid. A flat profile has no gradient position and is recorded as `NaN`; such samples are excluded from fits. This spatial diagnostic is separate from the time-ordered profile-value signal. It is not a reconstruction of a threshold-based layer-height method, and it does not establish that the largest gradient identifies the layer boundary. Set `fitTarget = 'gradient_position'` explicitly to fit this coordinate.
 
 The default `fitTarget = 'none'` does not fit a growth law. A requested power fit retains the original least-squares calculation in log-log space, using positive time/value pairs. Its R² is calculated in the original value space. The optional model comparison retains the linear, quadratic and `b*(1 + exp(-a*t))` models and their residual plots. R² ranks the fits on these samples; it does not establish a physical model. All fits use seconds, so coefficients from runs previously expressed in minutes need the corresponding unit conversion.
 
 Use `inspectionFrames`, `inspectionRows` and `inspectionColumns` to inspect raw image sections. Rows and columns are indexed within the crop. These profiles are returned in `results.inspection` and plotted when `makePlots = true`.
 
 ## Results
+
+Run `test_densityheight_time_order` with this folder on the MATLAB path for a synthetic regression test of a non-monotonic signal, its time pairing, fitted exponent and rejection of the removed option. The test was added during the audit fix; native MATLAB execution is still required (MATLAB/Octave were not available in the editing environment).
 
 The returned structure contains the configuration, image order, raw and normalised profiles, normalisation constants, coordinates and any requested diagnostics or fits. No source images are changed. With `outputFolder` supplied, the script writes `results.mat`, `profiles.csv`, `diagnostics.csv` and any displayed figures as JPEG files. These filenames are replaced on a subsequent run to the same output folder. CSV row coordinates and gradient positions use metres when `rowCoordinates_m` was supplied and are otherwise dimensionless; their units are also stored in `results.coordinateUnits`.
 

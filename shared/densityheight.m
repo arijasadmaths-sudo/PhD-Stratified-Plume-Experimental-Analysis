@@ -22,10 +22,10 @@ function results = densityheight(config)
 %     gradientDiagnostic  Return positions beside the largest adjacent profile difference.
 %                       Default false. This is a diagnostic, not a threshold
 %                       measurement of the stratified layer.
-%     legacyDiagnostic  Retain the old sorted profile-value signal; default
+%     legacyDiagnostic  Return the time-ordered profile-value signal; default
 %                       false. This signal is dimensionless, not a height.
 %     fitTarget         'none' (default), 'gradient_position', or
-%                       'legacy_sorted_signal'. The corresponding diagnostic
+%                       'legacy_profile_signal'. The corresponding diagnostic
 %                       must be enabled. Fits use time in seconds.
 %     compareModels     Also fit linear, quadratic and b*(1+exp(-a*t)) models
 %                       to the chosen signal; default false.
@@ -47,8 +47,14 @@ function results = densityheight(config)
     check_flag(config.legacyDiagnostic, 'legacyDiagnostic');
     check_flag(config.compareModels, 'compareModels');
     check_flag(config.makePlots, 'makePlots');
+    if strcmp(config.fitTarget, 'legacy_sorted_signal')
+        error('densityheight:RemovedSortedSignal', ...
+            ['legacy_sorted_signal has been removed: sorting values breaks ' ...
+             'their timestamp association. Use legacy_profile_signal for the ' ...
+             'time-ordered dimensionless diagnostic; it is not a layer height.']);
+    end
     fitTarget = validatestring(config.fitTarget, ...
-        {'none', 'gradient_position', 'legacy_sorted_signal'});
+        {'none', 'gradient_position', 'legacy_profile_signal'});
 
     [imageFiles, imagePaths] = find_images(config);
     frameCount = numel(imagePaths);
@@ -125,9 +131,10 @@ function results = densityheight(config)
             results.gradient.positions(gradientMagnitude == 0) = NaN;
         end
         if config.legacyDiagnostic
-            % The original script sorted profile values, not spatial positions.
+            % Keep each profile value paired with its original frame and time.
+            % This remains a dimensionless signal, not a spatial height.
             results.legacy.profileValues = profileValues;
-            results.legacy.sortedSignal = 1 - sort(profileValues, 'descend');
+            results.legacy.timeOrderedSignal = 1 - profileValues;
         end
     end
 
@@ -158,10 +165,10 @@ function results = densityheight(config)
         end
         if config.legacyDiagnostic
             figures(end+1) = figure;
-            plot(timeSeconds, results.legacy.sortedSignal, 'o-');
-            xlabel('Time (s)'); ylabel('Sorted profile-value signal');
+            plot(timeSeconds, results.legacy.timeOrderedSignal, 'o-');
+            xlabel('Time (s)'); ylabel('Time-ordered profile-value signal');
             title('Legacy dimensionless diagnostic');
-            figureNames{end+1} = 'legacy_sorted_signal';
+            figureNames{end+1} = 'legacy_profile_signal';
         end
         if ~isempty(results.powerFit)
             figures(end+1) = plot_power_fit(timeSeconds, fitValues, ...
@@ -363,12 +370,12 @@ function [values, label] = fitting_signal(results, target)
             else
                 label = 'Normalised gradient position';
             end
-        case 'legacy_sorted_signal'
+        case 'legacy_profile_signal'
             if isempty(results.legacy)
-                error('densityheight:FitTarget', 'Enable legacyDiagnostic to fit its sorted signal.');
+                error('densityheight:FitTarget', 'Enable legacyDiagnostic to fit its time-ordered signal.');
             end
-            values = results.legacy.sortedSignal;
-            label = 'Sorted profile-value signal';
+            values = results.legacy.timeOrderedSignal;
+            label = 'Time-ordered profile-value signal';
     end
 end
 
@@ -490,7 +497,7 @@ function save_results(results, folder, figures, figureNames)
         diagnostics.MaxAdjacentDifference = results.gradient.maxAdjacentDifference(:);
     end
     if ~isempty(results.legacy)
-        diagnostics.LegacySortedSignal = results.legacy.sortedSignal(:);
+        diagnostics.LegacyTimeOrderedSignal = results.legacy.timeOrderedSignal(:);
     end
     writetable(diagnostics, fullfile(folder, 'diagnostics.csv'));
     for index = 1:numel(figures)
