@@ -9,7 +9,7 @@ cfg.imageFiles = {};              % Filenames in the order to be processed.
 cfg.cropRect = [];                % [x y width height], or [] for the full image.
 cfg.resizeScale = 1;
 cfg.intensityDivisor = NaN;       % Raw image value corresponding to intensity 1.
-cfg.calibrationScaleFactor = NaN; % Multiplier placing calibration on the image exposure scale.
+cfg.calibrationScaleFactor = NaN; % Multiplier placing calibration on the measurement intensity scale.
 
 % Use the cropped, unresized image coordinates for the source and distances.
 cfg.geometry.sourceCoordinates = [NaN NaN]; % [horizontal vertical].

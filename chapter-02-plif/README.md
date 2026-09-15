@@ -26,7 +26,7 @@ summary = validate_plif_reconstruction(cfg);
 | `cropRect` | `[x y width height]`, using one-based pixel indices and width/height as pixel counts; `[]` uses the full image. Applied to both calibration and measurement images. |
 | `resizeScale` | Common image resizing factor. The cropped images must have equal dimensions. |
 | `intensityDivisor` | Raw image value that represents intensity 1. RGB images use the mean of the three channels. |
-| `calibrationScaleFactor` | Multiplier bringing the calibration image onto the measurement exposure scale. |
+| `calibrationScaleFactor` | Multiplier placing calibration and measurement images on a common intensity scale. |
 | `geometry.sourceCoordinates` | `[horizontal vertical]` source position in cropped, unresized image coordinates. A source above the crop has a negative vertical coordinate. |
 | `geometry.refractiveIndices` | `[air wall fluid]`. |
 | `geometry.wallThickness`, `geometry.unseenFluidDepth` | Distances in the same pixel units as the unresized source coordinates. |
