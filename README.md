@@ -11,6 +11,8 @@ Experimental images, calibration data and fitted results are not included.
 | File | Purpose |
 | --- | --- |
 | [densityheight.m](shared/densityheight.m) | Average image columns, subtract a reference profile, normalise profiles and compare selected signals with fitted curves |
+| [detect_stratification_depth.m](shared/detect_stratification_depth.m) | Apply the thesis bottom-up dimensional density-difference detector with exact ambient-return rejection |
+| [stratification_height_tolerances.m](shared/stratification_height_tolerances.m) | Return the repeat-specific neighbouring-row tolerances reported in the thesis |
 | [image_saver.m](shared/image_saver.m) | Select existing TIFF files and copy or move them to another folder |
 | [Propanolweight.m](shared/Propanolweight.m) | Calculate a propanol addition from supplied refractive-index calibration tables |
 | [test_forward_ray_A.m](chapter-02-plif/test_forward_ray_A.m) | Reconstruct a scalar field from fluorescence images and calibration data |
