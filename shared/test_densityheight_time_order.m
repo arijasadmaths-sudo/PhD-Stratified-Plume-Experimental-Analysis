@@ -20,6 +20,7 @@ function test_densityheight_time_order
     config.fitTarget = 'none';
     result = densityheight(config);
     assert(isequal(result.timeSeconds, config.timeSeconds));
+    assert(max(abs(result.rowCoordinates(:) - [0; 1/3; 2/3; 1])) < 1e-12);
     assert(max(abs(result.legacy.timeOrderedSignal - [0, .75, .25, 1])) < 1e-12);
     assert(~isfield(result.legacy, 'sortedSignal'));
     config.fitTarget = 'legacy_profile_signal';
