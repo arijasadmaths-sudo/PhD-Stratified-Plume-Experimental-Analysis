@@ -158,6 +158,8 @@ function results = densityheight(config)
         xlabel('Normalised profile'); ylabel(coordinateLabel);
         title('Vertical profiles');
         figureNames{end+1} = 'vertical_profiles';
+        figures(end+1) = plot_similarity_models();
+        figureNames{end+1} = 'similarity_models';
         if config.gradientDiagnostic
             figures(end+1) = figure;
             plot(timeSeconds, results.gradient.positions, 'o-');
@@ -454,30 +456,54 @@ function handle = plot_power_fit(time, values, result, label, fromCeiling)
     handle = figure;
     frames = result.validFrames;
     scatter(time(frames), values(frames), 'bo'); hold on;
-    fitLine = plot(time(frames), result.fittedValues, 'r-', 'LineWidth', 2);
+    plot(time(frames), result.fittedValues, 'r-', 'LineWidth', 2);
     xlabel('Time (s)'); ylabel(label);
     if fromCeiling
         set(gca, 'YDir', 'reverse');
     end
-    titleHandle = title(sprintf('Power fit: y = %.4g t^{%.4g}', result.a, result.b));
-    fitLegend = legend('Data', sprintf('Fit (R^2 = %.3f)', result.R2), 'Location', 'best');
+    title(sprintf('Power fit: y = %.4g t^{%.4g}', result.a, result.b));
+    legend('Data', sprintf('Fit (R^2 = %.3f)', result.R2), 'Location', 'best');
     grid on;
-    axesHandle = gca;
-    set(axesHandle, 'Position', [0.13 0.23 0.775 0.68]);
-    lambdaLabel = uicontrol(handle, 'Style', 'text', 'Units', 'normalized', ...
-        'Position', [0.12 0.04 0.27 0.06], 'String', sprintf('lambda = %.4g', result.a));
-    uicontrol(handle, 'Style', 'slider', 'Units', 'normalized', ...
-        'Position', [0.40 0.045 0.48 0.05], 'Min', 0, 'Max', 2*result.a, ...
-        'Value', result.a, 'Callback', @set_lambda);
+end
 
-    function set_lambda(source, ~)
-        lambda = get(source, 'Value');
-        fitted = lambda * time(frames).^result.b;
-        set(fitLine, 'YData', fitted);
-        set(lambdaLabel, 'String', sprintf('lambda = %.4g', lambda));
-        set(titleHandle, 'String', sprintf('Power fit: y = %.4g t^{%.4g}', lambda, result.b));
-        set(fitLegend, 'String', {'Data', ...
-            sprintf('Fit (R^2 = %.3f)', compute_r2(values(frames), fitted))});
+function handle = plot_similarity_models()
+    % The profile coordinate eta runs downwards from the ceiling.
+    eta = linspace(0, 1, 401);
+    handle = figure('Name', 'Similarity models');
+    axesHandle = axes('Parent', handle, 'Position', [0.14 0.24 0.76 0.66]);
+    curve = plot(axesHandle, eta.^5, eta, 'k--', 'LineWidth', 2);
+    set(axesHandle, 'YDir', 'reverse', 'XLim', [0 1], 'YLim', [0 1]);
+    xlabel(axesHandle, 'Normalised density');
+    ylabel(axesHandle, 'Normalised distance from ceiling, \eta');
+    grid(axesHandle, 'on');
+    uicontrol(handle, 'Style', 'text', 'Units', 'normalized', ...
+        'Position', [0.10 0.11 0.16 0.06], 'String', 'Model');
+    modelMenu = uicontrol(handle, 'Style', 'popupmenu', 'Units', 'normalized', ...
+        'Position', [0.25 0.11 0.24 0.06], ...
+        'String', {'Turbulent', 'Laminar'}, 'Value', 1, 'Callback', @update_curve);
+    lambdaLabel = uicontrol(handle, 'Style', 'text', 'Units', 'normalized', ...
+        'Position', [0.50 0.11 0.18 0.06], 'String', 'lambda = 0');
+    lambdaSlider = uicontrol(handle, 'Style', 'slider', 'Units', 'normalized', ...
+        'Position', [0.68 0.115 0.23 0.05], 'Min', 0, 'Max', 2, ...
+        'Value', 0, 'Callback', @update_curve);
+    update_curve([], []);
+
+    function update_curve(~, ~)
+        lambda = get(lambdaSlider, 'Value');
+        if get(modelMenu, 'Value') == 1
+            % Integral of (eta^2 + lambda)^2, normalised at eta = 1.
+            phi = (eta.^5 + (10/3)*lambda*eta.^3 + 5*lambda^2*eta) ...
+                / (1 + (10/3)*lambda + 5*lambda^2);
+            name = 'Turbulent';
+        else
+            % Integral of ((1-eta)^2 + lambda)^2, normalised at eta = 1.
+            phi = (3*(1-(1-eta).^5) + 10*lambda*(1-(1-eta).^3) ...
+                + 15*lambda^2*eta) / (3 + 10*lambda + 15*lambda^2);
+            name = 'Laminar';
+        end
+        set(curve, 'XData', phi);
+        set(lambdaLabel, 'String', sprintf('lambda = %.3f', lambda));
+        title(axesHandle, sprintf('%s similarity profile (lambda = %.3f)', name, lambda));
     end
 end
 
