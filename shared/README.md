@@ -12,12 +12,12 @@ config.referenceFrame = referenceFrameIndex;
 config.cropRows = retainedRows;
 config.cropColumns = retainedColumns;
 config.averagingColumns = profileColumns; % Indices within the cropped image.
-config.rowCoordinates_m = retainedRowHeights_m;
+config.rowCoordinates_m = retainedDistancesBelowCeiling_m;
 config.outputFolder = outputFolder;
 results = densityheight(config);
 ```
 
-The variables in this example are inputs from the image sequence and its calibration. The crop and averaging fields may be omitted to use the whole image. Height coordinates may be omitted for a normalised coordinate that decreases from 1 at the top row to 0 at the bottom. Supply the physical coordinate of each retained row to use a spatial calibration; the script does not assume a pixel size or image orientation in metres.
+The variables in this example are inputs from the image sequence and its calibration. The crop and averaging fields may be omitted to use the whole image. Coordinates may be omitted for a normalised distance that increases from 0 at the top row to 1 at the bottom. Supply nonnegative distances below the ceiling in increasing image-row order to use a spatial calibration; the script does not assume a pixel size.
 
 For equally spaced retained images, use `frameIntervalSeconds` instead of `timeSeconds`. This is the interval between the images being analysed. If `imageFiles` is omitted, files matching `imagePattern` (default `*.png`) are sorted lexicographically by filename. Check that this agrees with the time vector; names such as `1.png`, `10.png`, `2.png` need an explicit order.
 
@@ -50,7 +50,7 @@ The Chapter 2 height rule is implemented separately in `detect_stratification_de
 
 Set `gradientDiagnostic = true` to inspect the coordinate of the selected row, keeping the same choice between neighbouring rows and retaining frame order. Selection uses the largest adjacent profile difference without dividing by row spacing; it is not a spatial derivative on a nonuniform grid. A flat profile has no gradient position and is recorded as `NaN`; such samples are excluded from fits. This spatial diagnostic is separate from the time-ordered profile-value signal. It is not a reconstruction of a threshold-based layer-height method, and it does not establish that the largest gradient identifies the layer boundary. Set `fitTarget = 'gradient_position'` explicitly to fit this coordinate.
 
-The default `fitTarget = 'none'` does not fit a growth law. A requested power fit retains the original least-squares calculation in log-log space, using positive time/value pairs. Its R² is calculated in the original value space. The optional model comparison retains the linear, quadratic and `b*(1 + exp(-a*t))` models and their residual plots. R² ranks the fits on these samples; it does not establish a physical model. All fits use seconds, so coefficients from runs previously expressed in minutes need the corresponding unit conversion.
+The default `fitTarget = 'none'` does not fit a growth law. A requested power fit retains the original least-squares calculation in log-log space, using positive time/value pairs. Its R² is calculated in the original value space. The power-fit figure has a lambda slider for its prefactor (`y = lambda*t^b`); it starts at the fitted value and updates the plotted curve and R² without changing the saved fit coefficients. The optional model comparison retains the linear, quadratic and `b*(1 + exp(-a*t))` models and their residual plots. R² ranks the fits on these samples; it does not establish a physical model. All fits use seconds, so coefficients from runs previously expressed in minutes need the corresponding unit conversion.
 
 Use `inspectionFrames`, `inspectionRows` and `inspectionColumns` to inspect raw image sections. Rows and columns are indexed within the crop. These profiles are returned in `results.inspection` and plotted when `makePlots = true`.
 
@@ -58,7 +58,7 @@ Use `inspectionFrames`, `inspectionRows` and `inspectionColumns` to inspect raw 
 
 Run `test_densityheight_time_order` with this folder on the MATLAB path for a synthetic regression test of a non-monotonic signal, its time pairing, fitted exponent and rejection of the removed option. Run `test_detect_stratification_depth` for synthetic checks of the dimensional threshold, exact ambient-return rejection, strict `>` comparison and image-row orientation. Native MATLAB execution is still required for these tests; MATLAB/Octave were not available in the editing environment.
 
-The returned structure contains the configuration, image order, raw and normalised profiles, normalisation constants, coordinates and any requested diagnostics or fits. No source images are changed. With `outputFolder` supplied, the script writes `results.mat`, `profiles.csv`, `diagnostics.csv` and any displayed figures as JPEG files. These filenames are replaced on a subsequent run to the same output folder. CSV row coordinates and gradient positions use metres when `rowCoordinates_m` was supplied and are otherwise dimensionless; their units are also stored in `results.coordinateUnits`.
+The returned structure contains the configuration, image order, raw and normalised profiles, normalisation constants, coordinates and any requested diagnostics or fits. No source images are changed. With `outputFolder` supplied, the script writes `results.mat`, `profiles.csv`, `diagnostics.csv` and any displayed figures as JPEG files. These filenames are replaced on a subsequent run to the same output folder. CSV row coordinates and gradient positions are distances from the ceiling, in metres when `rowCoordinates_m` was supplied and otherwise dimensionless; their units are also stored in `results.coordinateUnits`.
 
 ## TIFF selection
 

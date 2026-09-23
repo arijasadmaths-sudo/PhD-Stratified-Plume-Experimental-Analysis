@@ -17,8 +17,9 @@ function results = densityheight(config)
 %     cropRows          Rows retained from each image; default all rows.
 %     cropColumns       Columns retained from each image; default all columns.
 %     averagingColumns  Columns of the cropped image to average; default all.
-%     rowCoordinates_m  Height of each retained row, in metres, in image order.
-%                       If omitted, heights run from 1 at the top to 0 below.
+%     rowCoordinates_m  Distance below the ceiling of each retained row, in
+%                       metres, in image order. If omitted, coordinates run
+%                       from 0 at the top to 1 at the bottom.
 %     gradientDiagnostic  Return positions beside the largest adjacent profile difference.
 %                       Default false. This is a diagnostic, not a threshold
 %                       measurement of the stratified layer.
@@ -153,12 +154,14 @@ function results = densityheight(config)
     if config.makePlots
         figures(end+1) = figure;
         plot(normalisedProfiles, rowCoordinates);
+        set(gca, 'YDir', 'reverse');
         xlabel('Normalised profile'); ylabel(coordinateLabel);
         title('Vertical profiles');
         figureNames{end+1} = 'vertical_profiles';
         if config.gradientDiagnostic
             figures(end+1) = figure;
             plot(timeSeconds, results.gradient.positions, 'o-');
+            set(gca, 'YDir', 'reverse');
             xlabel('Time (s)'); ylabel(coordinateLabel);
             title('Position beside the largest adjacent profile difference');
             figureNames{end+1} = 'gradient_position';
@@ -172,12 +175,13 @@ function results = densityheight(config)
         end
         if ~isempty(results.powerFit)
             figures(end+1) = plot_power_fit(timeSeconds, fitValues, ...
-                results.powerFit, fitLabel);
+                results.powerFit, fitLabel, strcmp(fitTarget, 'gradient_position'));
             figureNames{end+1} = 'power_fit';
         end
         if ~isempty(results.modelComparison)
             [comparisonFigure, residualFigure] = plot_comparison(timeSeconds, ...
-                fitValues, results.modelComparison, fitLabel);
+                fitValues, results.modelComparison, fitLabel, ...
+                strcmp(fitTarget, 'gradient_position'));
             figures(end+1:end+2) = [comparisonFigure, residualFigure];
             figureNames(end+1:end+2) = {'model_comparison', 'model_residuals'};
         end
@@ -206,6 +210,7 @@ function results = densityheight(config)
             figureNames{end+1} = sprintf('horizontal_sections_%d', frame);
             figures(end+1) = figure;
             plot(imageData(:, inspectionColumns), rowCoordinates);
+            set(gca, 'YDir', 'reverse');
             xlabel('Image intensity'); ylabel(coordinateLabel);
             title(sprintf('Vertical sections: frame %d', frame));
             figureNames{end+1} = sprintf('vertical_sections_%d', frame);
@@ -319,17 +324,18 @@ end
 function [height, label, units] = coordinates(config, rows)
     rowCount = numel(rows);
     if isempty(config.rowCoordinates_m)
-        height = (rows(end)-rows(:)) / (rows(end)-rows(1));
-        label = 'Normalised height';
+        height = (rows(:)-rows(1)) / (rows(end)-rows(1));
+        label = 'Normalised distance from ceiling';
         units = 'dimensionless';
     else
         validateattributes(config.rowCoordinates_m, {'numeric'}, ...
             {'vector', 'real', 'finite', 'numel', rowCount}, mfilename, 'rowCoordinates_m');
         height = config.rowCoordinates_m(:);
-        if ~(all(diff(height) > 0) || all(diff(height) < 0))
-            error('densityheight:Coordinates', 'rowCoordinates_m must be strictly monotonic.');
+        if ~all(diff(height) > 0) || any(height < 0)
+            error('densityheight:Coordinates', ...
+                'rowCoordinates_m must be nonnegative distances increasing from the ceiling.');
         end
-        label = 'Height (m)';
+        label = 'Distance from ceiling (m)';
         units = 'm';
     end
 end
@@ -444,23 +450,46 @@ function value = compute_r2(observed, fitted)
     end
 end
 
-function handle = plot_power_fit(time, values, result, label)
+function handle = plot_power_fit(time, values, result, label, fromCeiling)
     handle = figure;
     frames = result.validFrames;
     scatter(time(frames), values(frames), 'bo'); hold on;
-    plot(time(frames), result.fittedValues, 'r-', 'LineWidth', 2);
+    fitLine = plot(time(frames), result.fittedValues, 'r-', 'LineWidth', 2);
     xlabel('Time (s)'); ylabel(label);
-    title(sprintf('Power fit: y = %.4g t^{%.4g}', result.a, result.b));
-    legend('Data', sprintf('Fit (R^2 = %.3f)', result.R2), 'Location', 'best');
+    if fromCeiling
+        set(gca, 'YDir', 'reverse');
+    end
+    titleHandle = title(sprintf('Power fit: y = %.4g t^{%.4g}', result.a, result.b));
+    fitLegend = legend('Data', sprintf('Fit (R^2 = %.3f)', result.R2), 'Location', 'best');
     grid on;
+    axesHandle = gca;
+    set(axesHandle, 'Position', [0.13 0.23 0.775 0.68]);
+    lambdaLabel = uicontrol(handle, 'Style', 'text', 'Units', 'normalized', ...
+        'Position', [0.12 0.04 0.27 0.06], 'String', sprintf('lambda = %.4g', result.a));
+    uicontrol(handle, 'Style', 'slider', 'Units', 'normalized', ...
+        'Position', [0.40 0.045 0.48 0.05], 'Min', 0, 'Max', 2*result.a, ...
+        'Value', result.a, 'Callback', @set_lambda);
+
+    function set_lambda(source, ~)
+        lambda = get(source, 'Value');
+        fitted = lambda * time(frames).^result.b;
+        set(fitLine, 'YData', fitted);
+        set(lambdaLabel, 'String', sprintf('lambda = %.4g', lambda));
+        set(titleHandle, 'String', sprintf('Power fit: y = %.4g t^{%.4g}', lambda, result.b));
+        set(fitLegend, 'String', {'Data', ...
+            sprintf('Fit (R^2 = %.3f)', compute_r2(values(frames), fitted))});
+    end
 end
 
-function [fitFigure, residualFigure] = plot_comparison(time, values, result, label)
+function [fitFigure, residualFigure] = plot_comparison(time, values, result, label, fromCeiling)
     fitFigure = figure;
     plot(time, values, 'ko', 'MarkerFaceColor', 'k'); hold on;
     plot(time, result.linear.fittedValues, 'b-', 'LineWidth', 2);
     plot(time, result.quadratic.fittedValues, 'r--', 'LineWidth', 2);
     plot(time, result.exponential.fittedValues, 'm-.', 'LineWidth', 2);
+    if fromCeiling
+        set(gca, 'YDir', 'reverse');
+    end
     xlabel('Time (s)'); ylabel(label); title('Model comparison');
     legend('Data', sprintf('Linear (R^2 = %.3f)', result.linear.R2), ...
         sprintf('Quadratic (R^2 = %.3f)', result.quadratic.R2), ...
