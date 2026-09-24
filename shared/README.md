@@ -34,7 +34,7 @@ result = detect_stratification_depth( ...
     densityProfiles, rowCoordinates_m, ambientDensity, epsilon, tankHeight_m);
 ```
 
-It returns `z_b_m`, `h_m`, detected-row indices and a detection flag for each frame. The threshold is strict and the ambient-return check uses exact equality, so the input must be a bounded, calibrated density field. `stratification_height_tolerances.m` returns a table of run-specific thresholds for the thesis data. Do not use these dimensional thresholds with `densityheight.m` intensity profiles. Run `test_detect_stratification_depth` for synthetic detector checks.
+It scans upwards from the lowest physical row. A neighbouring density difference strictly greater than `epsilon` gives a candidate at the lower row; any exactly ambient row above it rejects that candidate. The first candidate that passes this check is `z_b_m`. It also returns `h_m`, detected-row indices and a detection flag for each frame. The input must be a bounded, calibrated density field. `stratification_height_tolerances.m` returns a table of run-specific thresholds for the thesis data. Do not use these dimensional thresholds with `densityheight.m` intensity profiles. Run `test_detect_stratification_depth` for synthetic detector checks.
 
 ## TIFF selection
 
