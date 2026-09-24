@@ -1,81 +1,51 @@
-# Image profiles
+# Shared experimental utilities
 
-`densityheight.m` is a general version of the image-processing script used across the thesis, with the image selection and configuration supplied by the caller. It reads a sequence of greyscale or RGB images, averages selected columns and compares the resulting vertical profiles. MATLAB with the Image Processing Toolbox is required (`im2gray` and `im2double`).
+Add this folder to the MATLAB path before calling its functions. Image processing requires Image Processing Toolbox.
 
-Set the image order, timing and reference explicitly before running it:
+## Vertical image profiles
+
+`densityheight.m` averages selected image columns, subtracts a reference profile and returns normalised image-intensity profiles. It does not convert intensity to density. Supply the ordered image filenames and calibration for each sequence:
 
 ```matlab
 config.imageFolder = imageFolder;
-config.imageFiles = retainedImageNames; % Filenames in time order.
-config.timeSeconds = retainedImageTimes_s;
+config.imageFiles = retainedImageNames;     % In time order.
+config.timeSeconds = retainedImageTimes_s;  % Or frameIntervalSeconds.
 config.referenceFrame = referenceFrameIndex;
 config.cropRows = retainedRows;
 config.cropColumns = retainedColumns;
-config.averagingColumns = profileColumns; % Indices within the cropped image.
-config.rowCoordinates_m = retainedDistancesBelowCeiling_m;
+config.averagingColumns = profileColumns;   % Within the crop.
+config.rowCoordinates_m = distancesBelowCeiling_m;
 config.outputFolder = outputFolder;
 results = densityheight(config);
 ```
 
-The variables in this example are inputs from the image sequence and its calibration. The crop and averaging fields may be omitted to use the whole image. Coordinates may be omitted for a normalised distance that increases from 0 at the top row to 1 at the bottom. Supply nonnegative distances below the ceiling in increasing image-row order to use a spatial calibration; the script does not assume a pixel size.
+Crop and averaging fields may be omitted to use the full image. Without `rowCoordinates_m`, the row coordinate runs from 0 at the top to 1 at the bottom. Without `imageFiles`, filenames matching `imagePattern` (default `*.png`) are sorted lexically; check their order against the times. The normalisation minimum comes from the whole retained sequence, so changing the selection changes the scale.
 
-For equally spaced retained images, use `frameIntervalSeconds` instead of `timeSeconds`. This is the interval between the images being analysed. If `imageFiles` is omitted, files matching `imagePattern` (default `*.png`) are sorted lexicographically by filename. Check that this agrees with the time vector; names such as `1.png`, `10.png`, `2.png` need an explicit order.
+Optional `inspectionFrames`, `inspectionRows` and `inspectionColumns` select raw image sections. `gradientDiagnostic` returns the position beside the largest adjacent profile difference; `legacyDiagnostic` returns a time-ordered profile-value signal. Neither is a threshold-derived layer height. Set `fitTarget` to `'gradient_position'` or `'legacy_profile_signal'` to fit the corresponding enabled diagnostic; its default is `'none'`. `compareModels` enables additional curve comparisons. The removed `'legacy_sorted_signal'` target raises an error because sorting detached values from their frame times.
 
-## Profile calculation
+With `outputFolder` set, the function writes `results.mat`, `profiles.csv`, `diagnostics.csv` and displayed JPEG figures. Run `test_densityheight_time_order` for a synthetic time-order check.
 
-Writing the mean image intensity as `I` and the reference profile as `Iref`, the original calculation is retained:
+## Stratification depth
 
-```matlab
-J = 1 - (I - Iref);
-P = (J - min(J(:))) / (1 - min(J(:)));
-```
-
-The minimum is taken over the full retained sequence. Changing the retained images can therefore change the scaling of all profiles. This operation does not convert intensity to density in kg m^-3. Values are not clipped; profiles can exceed 1 when their intensity falls below the reference. A reference that gives a zero denominator is rejected.
-
-## Optional diagnostics and fits
-
-The supplied script found the largest difference between neighbouring profile values and selected one of the two values beside it. It then sorted those values across the image sequence and plotted `1 - sortedValues` as a height. These are profile values, not row positions, and sorting them removes their association with individual frames. The sorting has now been removed: `1 - profileValues` retains the original frame/time pairing. It remains an optional, dimensionless diagnostic, not a layer height:
+`detect_stratification_depth.m` accepts reconstructed density profiles (rows by frames, kg m^-3), the height of each retained row (metres), ambient density and a neighbouring-row threshold (kg m^-3). An optional tank height returns `h = H-z_b`:
 
 ```matlab
-config.legacyDiagnostic = true;
-config.fitTarget = 'legacy_profile_signal';
-config.compareModels = true;
+result = detect_stratification_depth( ...
+    densityProfiles, rowCoordinates_m, ambientDensity, epsilon, tankHeight_m);
 ```
 
-`legacy_sorted_signal` is no longer accepted as a fit target: the function stops with an explanatory error so an old configuration cannot silently change meaning. The result is now `results.legacy.timeOrderedSignal`, and the CSV field is `LegacyTimeOrderedSignal`. Previously exported sorted histories and fits are not repaired by this code change; regenerate them from the original ordered inputs.
-
-The Chapter 2 height rule is implemented separately in `detect_stratification_depth.m`. It takes horizontally averaged reconstructed density profiles in kg m^-3, scans from the lowest retained physical row upwards, and treats `abs(rho(i+1)-rho(i)) > epsilon` as a candidate boundary at the lower row of that pair. Every row above the candidate, beginning with the adjacent upper row, is then checked; the candidate is rejected if any of those rows is exactly equal to the bounded ambient salt-water density. The first candidate that does not return to ambient is retained as `z_b`. If the tank height is supplied, the function also returns `h = H-z_b`.
-
-`stratification_height_tolerances.m` records the repeat-specific epsilon values reported in the thesis, including the corrected second full-height 30 cm^3/min value of 0.095 kg m^-3. These functions implement the stratification-height method documented in the thesis. The original data-set crops, reference profiles, time origins and completed run configurations must still be supplied with the source data for exact reproduction. Do not pass the thesis's kg m^-3 tolerances to the intensity-normalisation workflow in `densityheight.m`.
-
-Set `gradientDiagnostic = true` to inspect the coordinate of the selected row, keeping the same choice between neighbouring rows and retaining frame order. Selection uses the largest adjacent profile difference without dividing by row spacing; it is not a spatial derivative on a nonuniform grid. A flat profile has no gradient position and is recorded as `NaN`; such samples are excluded from fits. This spatial diagnostic is separate from the time-ordered profile-value signal. It is not a reconstruction of a threshold-based layer-height method, and it does not establish that the largest gradient identifies the layer boundary. Set `fitTarget = 'gradient_position'` explicitly to fit this coordinate.
-
-The default `fitTarget = 'none'` does not fit a growth law. A requested power fit retains the original least-squares calculation in log-log space, using positive time/value pairs. Its R² is calculated in the original value space. The optional model comparison retains the linear, quadratic and `b*(1 + exp(-a*t))` models and their residual plots. R² ranks the fits on these samples; it does not establish a physical model. All fits use seconds, so coefficients from runs previously expressed in minutes need the corresponding unit conversion.
-
-When `makePlots = true`, the separate **Similarity models** figure has a **Model** menu at the bottom left to switch between **Turbulent** and **Laminar**, and a lambda slider at the bottom right. The displayed normalised density profile uses distance from the ceiling, `eta = 0` at the ceiling and `eta = 1` at the lower edge. Its turbulent form is `(eta^5 + (10/3)*lambda*eta^3 + 5*lambda^2*eta)/(1 + (10/3)*lambda + 5*lambda^2)`. Its laminar form is `(3*(1-(1-eta)^5) + 10*lambda*(1-(1-eta)^3) + 15*lambda^2*eta)/(3 + 10*lambda + 15*lambda^2)`. Both keep the endpoints fixed at 0 and 1. This figure shows theoretical profiles separately because the image-intensity profiles above are not calibrated density and the cropped row coordinate is not automatically the measured layer coordinate `eta`.
-
-Use `inspectionFrames`, `inspectionRows` and `inspectionColumns` to inspect raw image sections. Rows and columns are indexed within the crop. These profiles are returned in `results.inspection` and plotted when `makePlots = true`.
-
-## Results
-
-Run `test_densityheight_time_order` with this folder on the MATLAB path for a synthetic regression test of a non-monotonic signal, its time pairing, fitted exponent and rejection of the removed option. Run `test_detect_stratification_depth` for synthetic checks of the dimensional threshold, exact ambient-return rejection, strict `>` comparison and image-row orientation. Native MATLAB execution is still required for these tests; MATLAB/Octave were not available in the editing environment.
-
-The returned structure contains the configuration, image order, raw and normalised profiles, normalisation constants, coordinates and any requested diagnostics or fits. No source images are changed. With `outputFolder` supplied, the script writes `results.mat`, `profiles.csv`, `diagnostics.csv` and any displayed figures as JPEG files. These filenames are replaced on a subsequent run to the same output folder. CSV row coordinates and gradient positions are distances from the ceiling, in metres when `rowCoordinates_m` was supplied and otherwise dimensionless; their units are also stored in `results.coordinateUnits`.
+It returns `z_b_m`, `h_m`, detected-row indices and a detection flag for each frame. The threshold is strict and the ambient-return check uses exact equality, so the input must be a bounded, calibrated density field. `stratification_height_tolerances.m` returns a table of run-specific thresholds for the thesis data. Do not use these dimensional thresholds with `densityheight.m` intensity profiles. Run `test_detect_stratification_depth` for synthetic detector checks.
 
 ## TIFF selection
-
-`image_saver.m` selects files that already exist. It includes `.tif` and `.tiff` files, sorted alphabetically without regard to case. Use zero-padded frame names or check this ordering before choosing indices.
 
 ```matlab
 selectedFiles = image_saver(sourceFolder, destinationFolder, ...
     firstIndex, stride, lastIndex, 'copy');
 ```
 
-Selection is `firstIndex:stride:lastIndex`. Use `[]` for `lastIndex` to select through the last TIFF. Copying is the default; pass `'move'` explicitly to move the selected files. Existing destination files are checked before transfer and are not intentionally overwritten. This utility does not acquire camera images.
+The selection is `firstIndex:stride:lastIndex`, applied to case-insensitively sorted `.tif` and `.tiff` filenames. Set `lastIndex = []` to continue through the last TIFF. The default operation copies; pass `'move'` to move files. Existing destination files are checked before transfer.
 
 ## Refractive-index matching
-
-`Propanolweight.m` retains the paired interpolation used to calculate a propanol addition:
 
 ```matlab
 [Grams, Prop, NaCln, segment] = Propanolweight( ...
@@ -83,6 +53,4 @@ Selection is `firstIndex:stride:lastIndex`. Use `[]` for `lastIndex` to select t
     saltCalibration, propanolCalibration);
 ```
 
-Densities are in kg m^-3 and base-fluid volume is in m^3 before the addition. Supply the measured calibration tables as `[density, refractive_index]` and `[refractive_index, mass_ratio_percent]`, with matching row counts. The salt density selects the same segment index in both tables; the function deliberately preserves that pairing. Internal density knots use the upper segment. Salt densities outside the calibration range are rejected; the paired propanol segment can extrapolate in refractive index, as in the supplied calculation.
-
-`Prop` is grams of propanol per 100 grams of base fluid, and `Grams` is the mass to add. This is a mass ratio relative to the base fluid, not a percentage of the final mixture. `NaCln` is the interpolated salt-solution refractive index. No empirical calibration values are assumed. These two utilities use base MATLAB functions.
+Densities are in kg m^-3 and base-fluid volume in m^3. Supply measured calibration arrays `[density, refractive_index]` and `[refractive_index, mass_ratio_percent]` with matched rows. `Prop` is grams of propanol per 100 grams of base fluid, `Grams` is the mass to add, and `NaCln` is the interpolated salt-solution refractive index.
